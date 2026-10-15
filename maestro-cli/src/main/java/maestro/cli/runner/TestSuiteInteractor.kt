@@ -43,6 +43,8 @@ class TestSuiteInteractor(
     private val shardIndex: Int? = null,
     private val captureSteps: Boolean = false,
     private val captureFullArtifacts: Boolean = false,
+    private val captureStepScreenshots: Boolean = false,
+    private val captureScreenRecording: Boolean = captureFullArtifacts,
 ) {
 
     private val logger = LoggerFactory.getLogger(TestSuiteInteractor::class.java)
@@ -191,6 +193,8 @@ class TestSuiteInteractor(
                     maestro = maestro,
                     artifactsDir = flowDir,
                     captureFullArtifacts = captureFullArtifacts,
+                    captureStepScreenshots = captureStepScreenshots,
+                    captureScreenRecording = captureScreenRecording,
                     listeners = listOf(CliConsoleListener(shardPrefix)),
                     onCommandFailed = { _, _, _ -> Orchestra.ErrorResolution.FAIL },
                     onCommandGeneratedOutput = { command, defects, screenshot ->

@@ -193,6 +193,13 @@ class TestCommand : Callable<Int> {
     )
     private var analyze: Boolean = false
 
+    @Option(names = ["--capture-step-screenshots"], description = ["Capture command-boundary screenshots without AI analysis"])
+    private var captureStepScreenshots: Boolean = false
+
+    @Option(names = ["--capture-screen-recording"], negatable = true, fallbackValue = "true",
+        description = ["Control full-run recording independently (defaults to --analyze)"])
+    private var captureScreenRecording: Boolean? = null
+
     @Option(names = ["--api-url"], description = ["[Beta] API base URL"])
     private var apiUrl: String = "https://api.copilot.mobile.dev"
 
@@ -523,6 +530,8 @@ class TestCommand : Callable<Int> {
                         analyze,
                         authToken,
                         deviceId,
+                        captureStepScreenshots = captureStepScreenshots,
+                        captureScreenRecording = captureScreenRecording ?: analyze,
                     )
                 } else {
                     runSingleFlow(maestro, device, flowFile, debugOutputPath, deviceId)
@@ -571,6 +580,8 @@ class TestCommand : Callable<Int> {
             resultView = resultView,
             debugOutputPath = debugOutputPath,
             analyze = analyze,
+            captureStepScreenshots = captureStepScreenshots,
+            captureScreenRecording = captureScreenRecording ?: analyze,
             apiKey = authToken,
             deviceId = deviceId,
         )
@@ -620,6 +631,8 @@ class TestCommand : Callable<Int> {
             reporter = ReporterFactory.buildReporter(format, testSuiteName),
             captureSteps = format == ReportFormat.HTML_DETAILED,
             captureFullArtifacts = analyze,
+            captureStepScreenshots = captureStepScreenshots,
+            captureScreenRecording = captureScreenRecording ?: analyze,
         ).runTestSuite(
             executionPlan = chunkPlans[shardIndex],
             env = env,

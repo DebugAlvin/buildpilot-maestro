@@ -63,6 +63,8 @@ object MaestroCommandRunner {
         aiOutput: FlowAIOutput,
         apiKey: String? = null,
         analyze: Boolean = false,
+        captureStepScreenshots: Boolean = false,
+        captureScreenRecording: Boolean = analyze,
         artifactsDir: Path? = null
     ): Orchestra.FlowResult {
         val config = YamlCommandReader.getConfig(commands)
@@ -106,6 +108,8 @@ object MaestroCommandRunner {
             // --analyze feeds the AI from the bundle: capture a per-step screenshot
             // for every command so the analysis has the full visual trail.
             captureFullArtifacts = analyze,
+            captureStepScreenshots = captureStepScreenshots,
+            captureScreenRecording = captureScreenRecording,
             insights = CliInsights,
             onCommandStart = { _, command ->
                 logger.info("${command.description()} RUNNING")

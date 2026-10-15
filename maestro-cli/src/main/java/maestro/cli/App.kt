@@ -119,6 +119,11 @@ private fun printVersion() {
 }
 
 fun main(args: Array<String>) {
+    // Local capability discovery must not initialise analytics, devices or network clients.
+    if (args.contentEquals(arrayOf("--buildpilot-capabilities"))) {
+        println("""{"schemaVersion":1,"version":"2.11.0-buildpilot.1","upstreamCommit":"c8c361be1cc89b2e742f185466a302a22778be6b","patchVersion":1,"capabilities":["step-screenshots","independent-recording","screenshot-phase"]}""")
+        return
+    }
     // Must run before any other init: analytics notices, dependency banners, and
     // kotlin-logging's first-load message will otherwise land on the MCP JSON-RPC
     // channel and break the handshake for strict clients like Claude Desktop.

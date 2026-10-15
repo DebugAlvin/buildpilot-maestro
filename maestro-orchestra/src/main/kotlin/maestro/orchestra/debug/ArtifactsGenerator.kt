@@ -47,6 +47,8 @@ internal class ArtifactsGenerator(
     private val maestro: Maestro,
     private val captureFullArtifacts: Boolean = false,
     private val onStepScreenshotCaptured: (sequenceNumber: Int, relativePath: String) -> Unit = { _, _ -> },
+    private val captureStepScreenshots: Boolean = false,
+    private val captureScreenRecording: Boolean = captureFullArtifacts,
 ) : OrchestraListener {
 
     val debugOutput = FlowDebugOutput()
@@ -79,7 +81,7 @@ internal class ArtifactsGenerator(
         } catch (e: Exception) {
             logger.warn("Failed to set up artifacts directory at $artifactsDir", e)
         }
-        if (captureFullArtifacts) startFullRunRecording()
+        if (captureScreenRecording) startFullRunRecording()
     }
 
     override fun onCommandStart(cmd: MaestroCommand, sequenceNumber: Int, depth: Int) {
@@ -99,7 +101,7 @@ internal class ArtifactsGenerator(
         if (appUnderTest == null) cmd.launchAppCommand?.appId?.let { appUnderTest = it }
 
         // Pre-command shot: the screen the step is about to act on.
-        if (captureFullArtifacts && StepArtifactNaming.capturesScreenshot(cmd)) captureStepScreenshot(metadata)
+        if ((captureFullArtifacts || captureStepScreenshots) && StepArtifactNaming.capturesScreenshot(cmd)) captureStepScreenshot(metadata)
     }
 
     /**
@@ -142,11 +144,12 @@ internal class ArtifactsGenerator(
         // show the same screen (the viewer overlays them). viewHierarchy() is ~1s, so composites —
         // which only wrap children — keep the screenshot but skip the hierarchy.
         if (StepArtifactNaming.capturesHierarchy(cmd)) captureStepHierarchy(metadata)
-        if (captureFullArtifacts) {
-            // Overwrite the pre-command shot with the at-outcome frame; its callback already fired.
-            captureStepScreenshotFile(metadata)
+        val phase = if (outcome is CommandOutcome.Failed) "failure" else "warning"
+        if (captureFullArtifacts || captureStepScreenshots) {
+            // Only a successful replacement changes the phase of the retained image.
+            captureStepScreenshotFile(metadata, phase)
         } else {
-            captureStepScreenshot(metadata)
+            captureStepScreenshot(metadata, phase)
         }
     }
 
@@ -180,7 +183,7 @@ internal class ArtifactsGenerator(
 
     override fun onFlowEnd() {
         // Capture the resting screen before the recording is torn down.
-        if (captureFullArtifacts) captureFinalScreenshot()
+        if (captureFullArtifacts || captureStepScreenshots) captureFinalScreenshot()
         stopFullRunRecording()
         val collector = collector
         if (artifactsDir != null && collector != null) {
@@ -254,27 +257,28 @@ internal class ArtifactsGenerator(
         }
     }
 
-    private fun captureStepScreenshot(metadata: CommandDebugMetadata) {
-        val relativePath = captureStepScreenshotFile(metadata) ?: return
+    private fun captureStepScreenshot(metadata: CommandDebugMetadata, phase: String = "before_action") {
+        val relativePath = captureStepScreenshotFile(metadata, phase) ?: return
         onStepScreenshotCaptured(metadata.sequenceNumber, relativePath)
     }
 
-    private fun captureStepScreenshotFile(metadata: CommandDebugMetadata): String? =
+    private fun captureStepScreenshotFile(metadata: CommandDebugMetadata, phase: String): String? =
         captureScreenshot(
             "${BundleLayout.STEP_SCREENSHOTS_DIR}/${StepArtifactNaming.stem(metadata.sequenceNumber, metadata.command)}${BundleLayout.SCREENSHOT_EXTENSION}",
             sequenceNumber = metadata.sequenceNumber,
+            phase = phase,
         )
 
     /** Flow-end shot of the resting screen — flow-level (owns no step). */
     private fun captureFinalScreenshot() {
-        captureScreenshot(BundleLayout.FINAL_SCREENSHOT, sequenceNumber = null)
+        captureScreenshot(BundleLayout.FINAL_SCREENSHOT, sequenceNumber = null, phase = "after_teardown")
     }
 
     /**
      * Captures [relativePath] (via a sibling temp moved into place on success, so a failed recapture
      * never destroys a frame already there), returning the bundle-relative path or null on failure.
      */
-    private fun captureScreenshot(relativePath: String, sequenceNumber: Int?): String? {
+    private fun captureScreenshot(relativePath: String, sequenceNumber: Int?, phase: String): String? {
         val collector = collector ?: return null
         val destFile = collector.allocate(
             ArtifactKind.SCREENSHOT,
@@ -290,6 +294,12 @@ internal class ArtifactsGenerator(
                 return null
             }
             Files.move(tempFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            if (captureStepScreenshots) {
+                collector.annotate(relativePath, mapOf(
+                    "phase" to phase,
+                    "capturedAtEpochMs" to System.currentTimeMillis().toString(),
+                ))
+            }
             relativePath
         } catch (e: Exception) {
             logger.warn("Failed to capture screenshot $relativePath", e)

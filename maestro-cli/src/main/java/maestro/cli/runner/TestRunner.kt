@@ -50,6 +50,8 @@ object TestRunner {
         analyze: Boolean = false,
         apiKey: String? = null,
         deviceId: String?,
+        captureStepScreenshots: Boolean = false,
+        captureScreenRecording: Boolean = analyze,
     ): Int {
         val debugOutput = FlowDebugOutput()
         var aiOutput = FlowAIOutput(
@@ -80,6 +82,8 @@ object TestRunner {
                     debugOutput = debugOutput,
                     aiOutput = aiOutput,
                     analyze = analyze,
+                    captureStepScreenshots = captureStepScreenshots,
+                    captureScreenRecording = captureScreenRecording,
                     apiKey = apiKey,
                     artifactsDir = flowDir,
                 )
@@ -115,6 +119,8 @@ object TestRunner {
         analyze: Boolean = false,
         apiKey: String? = null,
         deviceId: String?,
+        captureStepScreenshots: Boolean = false,
+        captureScreenRecording: Boolean = analyze,
     ): Nothing {
         val resultView = AnsiResultView("> Press [ENTER] to restart the Flow\n\n")
 
@@ -160,6 +166,8 @@ object TestRunner {
                                         flowFile = flowFile,
                                     ),
                                     analyze = analyze,
+                                    captureStepScreenshots = captureStepScreenshots,
+                                    captureScreenRecording = captureScreenRecording,
                                     apiKey = apiKey,
                                 )
                             }

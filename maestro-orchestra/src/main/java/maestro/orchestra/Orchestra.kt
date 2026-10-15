@@ -134,6 +134,8 @@ class Orchestra(
     private val maestro: Maestro,
     private val artifactsDir: Path? = null,
     private val captureFullArtifacts: Boolean = false,
+    private val captureStepScreenshots: Boolean = false,
+    private val captureScreenRecording: Boolean = captureFullArtifacts,
     private val listeners: List<OrchestraListener> = emptyList(),
     private val lookupTimeoutMs: Long = 17000L,
     private val optionalLookupTimeoutMs: Long = 7000L,
@@ -178,7 +180,8 @@ class Orchestra(
     // ArtifactsGenerator is always the first listener: it writes the bundle when
     // artifactsDir is set and populates debugOutput either way.
     private val artifactsGenerator: ArtifactsGenerator =
-        ArtifactsGenerator(artifactsDir, maestro, captureFullArtifacts, onStepScreenshotCaptured)
+        ArtifactsGenerator(artifactsDir, maestro, captureFullArtifacts, onStepScreenshotCaptured,
+            captureStepScreenshots, captureScreenRecording)
     private val effectiveListeners: List<OrchestraListener> = listOf(artifactsGenerator) + listeners
 
     private var commandSequenceCounter: Int = 0

@@ -7,7 +7,7 @@ import maestro.orchestra.MaestroCommand
 import java.util.IdentityHashMap
 
 /** One artifact a command produced: its kind plus the artifacts-folder-relative path. */
-data class CommandArtifact(val type: ArtifactKind, val path: String)
+data class CommandArtifact(val type: ArtifactKind, val path: String, val metadata: Map<String, String> = emptyMap())
 
 data class CommandDebugMetadata(
     var status: CommandStatus? = null,
